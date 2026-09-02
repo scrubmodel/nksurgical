@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khanz Healthcare – Invoice Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1117; --paper: #f8f6f1; --cream: #f0ece3;
+    --gold: #b8862a; --gold-light: #d4a84b; --gold-pale: #f5e9d0;
+    --slate: #4a5568; --muted: #8a8f9d; --border: #e2ddd5; --white: #ffffff;
+    --danger: #c0392b; --success: #2d6a4f; --success-pale: #eaf4ee;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+  header {
+    background: var(--ink); color: var(--white); padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px; border-bottom: 3px solid var(--gold);
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.25rem; letter-spacing: 0.02em; }
+  .logo span { color: var(--gold-light); }
+  .tab-nav { display: flex; gap: 4px; }
+  .tab-btn {
+    background: none; border: none; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 8px 18px; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+  .tab-btn.active { color: var(--gold-light); background: rgba(184,134,42,0.15); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .form-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 24px rgba(0,0,0,0.06); }
+  .form-header { background: var(--ink); padding: 28px 36px; display: flex; align-items: center; gap: 16px; }
+  .form-header-icon { width: 44px; height: 44px; background: rgba(184,134,42,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+  .form-header h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--white); font-weight: 600; }
+  .form-header p { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+  .form-body { padding: 36px; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); }
+  input, select {
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    padding: 11px 14px; border: 1.5px solid var(--border);
+    border-radius: 6px; background: var(--paper); color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  }
+  input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,134,42,0.12); background: var(--white); }
+  .amount-wrap { position: relative; }
+  .amount-wrap .prefix { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 600; font-size: 1rem; }
+  .amount-wrap input { padding-left: 28px; }
+
+  /* SHIFTS */
+  .shifts-section { margin-top: 28px; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .shifts-header { background: var(--cream); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .shifts-header-left { display: flex; align-items: center; gap: 10px; }
+  .shifts-title { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); }
+  .shift-count-badge { background: var(--gold-pale); color: var(--gold); font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; border: 1px solid #e8d5a8; font-family: 'DM Mono', monospace; }
+  .shifts-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  .shift-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 160px 32px;
+    align-items: center; gap: 12px;
+    background: var(--paper); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    animation: slideIn 0.2s ease;
+  }
+  .shift-row-label { display: flex; flex-direction: column; gap: 3px; font-size: 0.7rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .shift-num { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--gold); font-weight: 500; text-align: center; }
+  .shift-row input[type="date"] { margin: 0; }
+  .shift-rate-wrap { position: relative; }
+  .shift-rate-wrap .prefix { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--gold); font-weight: 600; font-size: 0.9rem; }
+  .shift-rate-wrap input { padding-left: 24px; font-size: 0.88rem; width: 100%; }
+  .shift-remove { background: none; border: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; padding: 4px 6px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
+  .shift-remove:hover { color: var(--danger); background: #fdf0ef; }
+  .shift-remove:disabled { opacity: 0.2; cursor: default; }
+
+  .shifts-col-headers {
+    display: grid;
+    grid-template-columns: 24px 1fr 160px 32px;
+    gap: 12px; padding: 0 14px 8px 14px;
+    font-size: 0.7rem; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+
+  .shifts-footer { padding: 12px 20px; border-top: 1px solid var(--border); background: var(--cream); }
+  .add-shift-btn { background: none; border: 1.5px dashed var(--gold); color: var(--gold); font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 600; padding: 8px 18px; border-radius: 6px; cursor: pointer; transition: all 0.18s; letter-spacing: 0.03em; }
+  .add-shift-btn:hover { background: var(--gold-pale); }
+
+  .total-summary { margin-top: 20px; background: var(--success-pale); border: 1.5px solid #a8d5b8; border-radius: 8px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .total-summary-left { font-size: 0.85rem; color: var(--success); font-weight: 500; line-height: 1.7; }
+  .total-summary-left span { font-family: 'DM Mono', monospace; font-weight: 600; }
+  .total-summary-amount { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--success); white-space: nowrap; }
+
+  /* SYNC STATUS */
+  .sync-banner {
+    margin-top: 16px; padding: 10px 16px; border-radius: 6px;
+    font-size: 0.82rem; font-weight: 500; display: none;
+    align-items: center; gap: 8px;
+  }
+  .sync-banner.show { display: flex; }
+  .sync-banner.syncing { background: #fff8e1; border: 1px solid #f0d080; color: #7a5800; }
+  .sync-banner.synced  { background: var(--success-pale); border: 1px solid #a8d5b8; color: var(--success); }
+  .sync-banner.failed  { background: #fdf0ef; border: 1px solid #e8c2be; color: var(--danger); }
+
+  .form-actions { margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end; padding-top: 24px; border-top: 1px solid var(--border); }
+  .btn { font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; letter-spacing: 0.04em; padding: 11px 24px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.18s; }
+  .btn-outline { background: none; border: 1.5px solid var(--border); color: var(--slate); }
+  .btn-outline:hover { border-color: var(--slate); color: var(--ink); }
+  .btn-gold { background: var(--gold); color: var(--white); }
+  .btn-gold:hover { background: #a07522; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(184,134,42,0.3); }
+  .btn-danger { background: none; border: 1.5px solid #e8c2be; color: var(--danger); font-size: 0.8rem; padding: 7px 14px; }
+  .btn-danger:hover { background: #fdf0ef; }
+  .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+
+  /* SETTINGS */
+  .settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding: 14px 18px; background: var(--cream); border: 1px solid var(--border); border-radius: 8px; }
+  .settings-row label { text-transform: none; font-size: 0.85rem; font-weight: 600; color: var(--ink); letter-spacing: 0; white-space: nowrap; }
+  .settings-row input { flex: 1; font-size: 0.85rem; padding: 8px 12px; }
+  .settings-row .hint { font-size: 0.75rem; color: var(--muted); margin-top: 0; }
+
+  /* RECORDS */
+  .records-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .records-header h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 600; }
+  .records-header p { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+  .badge { display: inline-flex; align-items: center; background: var(--gold-pale); color: var(--gold); font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-left: 10px; border: 1px solid #e8d5a8; }
+  .records-empty { text-align: center; padding: 60px 20px; color: var(--muted); background: var(--white); border: 1px solid var(--border); border-radius: 12px; }
+  .records-empty .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .records-empty h3 { font-size: 1rem; font-weight: 600; color: var(--slate); }
+  .records-empty p { font-size: 0.85rem; margin-top: 4px; }
+  .records-list { display: flex; flex-direction: column; gap: 12px; }
+  .record-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; gap: 20px; transition: box-shadow 0.2s, transform 0.2s; cursor: pointer; }
+  .record-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .record-num { font-family: 'DM Mono', monospace; font-size: 0.78rem; font-weight: 500; color: var(--gold); background: var(--gold-pale); padding: 5px 10px; border-radius: 4px; white-space: nowrap; border: 1px solid #e8d5a8; }
+  .record-info { flex: 1; min-width: 0; }
+  .record-hospital { font-weight: 600; font-size: 0.95rem; }
+  .record-date { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+  .record-amount { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 600; color: var(--success); white-space: nowrap; }
+  .record-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* MODAL */
+  .invoice-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,17,23,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .invoice-modal-overlay.open { display: flex; }
+  .invoice-modal { background: var(--white); border-radius: 12px; width: 100%; max-width: 780px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .invoice-modal-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--cream); border-radius: 12px 12px 0 0; position: sticky; top: 0; z-index: 10; }
+  .invoice-doc { padding: 56px 64px; font-family: 'DM Sans', sans-serif; }
+
+  .inv-number { text-align: center; font-size: 0.95rem; margin-bottom: 48px; line-height: 1.9; }
+  .inv-header { display: flex; justify-content: flex-end; margin-bottom: 40px; }
+  .inv-sender { text-align: left; line-height: 1.7; font-size: 0.9rem; }
+  .inv-sender-name { font-weight: 600; font-size: 0.92rem; }
+  .inv-to { margin-bottom: 36px; line-height: 1.7; font-size: 0.9rem; }
+  .inv-body { margin-bottom: 36px; line-height: 1.8; font-size: 0.9rem; }
+  .inv-shifts { margin-top: 12px; padding-left: 16px; }
+  .inv-shift-line { margin-bottom: 4px; }
+  .inv-total { font-size: 0.92rem; margin-bottom: 36px; padding: 16px 20px; background: var(--cream); border-radius: 6px; border-left: 3px solid var(--gold); }
+  .inv-total strong { font-size: 1.05rem; }
+  .inv-bank { font-size: 0.88rem; line-height: 1.8; color: var(--slate); }
+  .inv-bank-title { font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: var(--white); padding: 12px 20px; border-radius: 8px; font-size: 0.88rem; font-weight: 500; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s; border-left: 3px solid var(--gold); }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media print {
+    @page { margin: 15mm 18mm; size: A4; }
+    body * { visibility: hidden; }
+    .invoice-doc, .invoice-doc * { visibility: visible; }
+    .invoice-modal-actions { display: none !important; }
+    .invoice-doc { position: fixed; inset: 0; padding: 0; font-size: 0.82rem; }
+    .inv-number { margin-bottom: 24px; }
+    .inv-header { margin-bottom: 20px; }
+    .inv-sender { line-height: 1.5; font-size: 0.82rem; }
+    .inv-to { margin-bottom: 18px; line-height: 1.5; font-size: 0.82rem; }
+    .inv-body { margin-bottom: 18px; line-height: 1.6; font-size: 0.82rem; }
+    .inv-total { margin-bottom: 18px; padding: 10px 14px; background: #f5f5f5 !important; -webkit-print-color-adjust: exact; }
+    .inv-shifts { margin-top: 8px; }
+    .inv-shift-line { margin-bottom: 2px; }
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 0 16px; }
+    .logo { font-size: 1rem; }
+    .tab-btn { padding: 8px 10px; font-size: 0.78rem; }
+    main { padding: 24px 16px; }
+    .form-body { padding: 20px; }
+    .form-header { padding: 20px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .shift-row { grid-template-columns: 24px 1fr; grid-template-rows: auto auto; }
+    .shift-rate-wrap { grid-column: 2; }
+    .shift-remove { grid-column: 1; grid-row: 1; }
+    .invoice-doc { padding: 30px 24px; }
+    .record-card { flex-wrap: wrap; }
+    .total-summary { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Khanz <span>Healthcare</span> Services</div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="showView('form')">＋ New Invoice</button>
+    <button class="tab-btn" onclick="showView('records')">Records</button>
+    <button class="tab-btn" onclick="showView('settings')">⚙ Settings</button>
+  </nav>
+</header>
+
+<main>
+  <!-- FORM -->
+  <div class="view active" id="view-form">
+    <div class="form-card">
+      <div class="form-header">
+        <div class="form-header-icon">📄</div>
+        <div>
+          <h2>Generate New Invoice</h2>
+          <p>Add each shift with its own date and rate — total calculates automatically.</p>
+        </div>
+      </div>
+      <div class="form-body">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Hospital / Client Name</label>
+            <input type="text" id="f-hospital" placeholder="e.g. Pall Mall Hospital">
+          </div>
+          <div class="form-group">
+            <label>Hospital Location</label>
+            <input type="text" id="f-location" placeholder="e.g. Newton-le-Willows">
+          </div>
+        </div>
+
+        <!-- SHIFTS -->
+        <div class="shifts-section">
+          <div class="shifts-header">
+            <div class="shifts-header-left">
+              <span class="shifts-title">Shifts Worked</span>
+              <span class="shift-count-badge" id="shift-count">1 shift</span>
+            </div>
+          </div>
+          <div class="shifts-list" id="shifts-list">
+            <div class="shifts-col-headers">
+              <span></span>
+              <span>Date</span>
+              <span>Rate (£)</span>
+              <span></span>
+            </div>
+          </div>
+          <div class="shifts-footer">
+            <button class="add-shift-btn" onclick="addShift()">＋ Add Another Shift</button>
+          </div>
+        </div>
+
+        <!-- TOTAL -->
+        <div class="total-summary">
+          <div class="total-summary-left" id="total-calc-text">—</div>
+          <div class="total-summary-amount" id="total-display">£0.00</div>
+        </div>
+
+        <!-- SYNC STATUS -->
+        <div class="sync-banner" id="sync-banner">
+          <span id="sync-icon">⏳</span>
+          <span id="sync-msg">Syncing to Google Sheets…</span>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+          <button class="btn btn-gold" onclick="previewInvoice()">Preview & Save →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECORDS -->
+  <div class="view" id="view-records">
+    <div class="records-header">
+      <div>
+        <h2>Invoice Records <span class="badge" id="records-count">0</span></h2>
+        <p>All saved invoices — click any record to view or reprint.</p>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="showView('form')">＋ New Invoice</button>
+    </div>
+    <div id="records-container"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="view" id="view-settings">
+    <div class="form-card">
+      <div class="form-header">
+        <div class="form-header-icon">⚙️</div>
+        <div>
+          <h2>Settings</h2>
+          <p>Paste your Google Sheets Web App URL here to enable auto-sync.</p>
+        </div>
+      </div>
+      <div class="form-body">
+        <div class="settings-row">
+          <label>Google Sheets URL</label>
+          <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/…/exec">
+        </div>
+        <p style="font-size:0.82rem;color:var(--muted);margin-top:-16px;margin-bottom:24px;">
+          Deploy your Apps Script as a Web App and paste the URL above. See the included <strong>khanz-google-script.gs</strong> file for setup instructions.
+        </p>
+        <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;">
+          <button class="btn btn-gold" onclick="saveSettings()">Save URL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="invoice-modal-overlay" id="invoice-modal">
+  <div class="invoice-modal">
+    <div class="invoice-modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">✕ Close</button>
+      <button class="btn btn-gold btn-sm" onclick="printInvoice()">🖨 Print / Save PDF</button>
+    </div>
+    <div class="invoice-doc" id="invoice-doc"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STORAGE ──
+const STORAGE_KEY = 'khanz_invoices_v3';
+const SETTINGS_KEY = 'khanz_settings_v1';
+function getRecords() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+function saveRecords(r) { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); }
+function getSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; } }
+function saveSettings_() { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ sheetsUrl: document.getElementById('sheets-url').value.trim() })); showToast('✅ Settings saved.'); }
+function saveSettings() { saveSettings_(); }
+
+// ── DATE HELPERS ──
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function getOrdinal(n) { const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function parseDate(ds) { const [y,m,d]=ds.split('-'); return {day:parseInt(d),month:MONTHS[parseInt(m)-1],year:y}; }
+function formatFull(ds) { const p=parseDate(ds); return `${getOrdinal(p.day)} ${p.month} ${p.year}`; }
+function todayStr() {
+  const n=new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+}
+function todayDisplay() {
+  const [y,m,d]=todayStr().split('-'); return `${d}/${m}/${y}`;
+}
+
+// ── INVOICE NUMBER — based on today's date ──
+function generateInvoiceNumber() {
+  const [y,m,d] = todayStr().split('-');
+  const base = `${d}${m}${y}`;
+  const records = getRecords();
+  const sameDay = records.filter(r => r.generatedDate === todayStr());
+  return sameDay.length === 0 ? base : `${base}-${String(sameDay.length).padStart(2,'0')}`;
+}
+
+// ── SHIFTS STATE ──
+let shiftIdCounter = 0;
+const shifts = [];
+
+function addShift(dateVal, rateVal) {
+  shiftIdCounter++;
+  shifts.push({ id: shiftIdCounter, date: dateVal || '', rate: rateVal || '' });
+  renderShifts();
+  updateTotal();
+}
+
+function removeShift(id) {
+  const idx = shifts.findIndex(s => s.id === id);
+  if (idx > -1) shifts.splice(idx, 1);
+  renderShifts();
+  updateTotal();
+}
+
+function onShiftChange(id, field, val) {
+  const s = shifts.find(s => s.id === id);
+  if (s) s[field] = val;
+  updateTotal();
+}
+
+function renderShifts() {
+  const list = document.getElementById('shifts-list');
+  // Keep column headers
+  list.innerHTML = `
+    <div class="shifts-col-headers">
+      <span></span><span>Date</span><span>Rate (£)</span><span></span>
+    </div>
+    ${shifts.map((s, i) => `
+    <div class="shift-row">
+      <span class="shift-num">${i + 1}</span>
+      <input type="date" value="${s.date}"
+        onchange="onShiftChange(${s.id},'date',this.value)"
+        oninput="onShiftChange(${s.id},'date',this.value)">
+      <div class="shift-rate-wrap">
+        <span class="prefix">£</span>
+        <input type="number" placeholder="0.00" step="0.01" min="0" value="${s.rate}"
+          oninput="onShiftChange(${s.id},'rate',this.value)">
+      </div>
+      <button class="shift-remove" onclick="removeShift(${s.id})"
+        ${shifts.length === 1 ? 'disabled' : ''} title="Remove shift">✕</button>
+    </div>`).join('')}`;
+  const n = shifts.length;
+  document.getElementById('shift-count').textContent = `${n} shift${n !== 1 ? 's' : ''}`;
+}
+
+function updateTotal() {
+  const lines = shifts.map((s, i) => {
+    const r = parseFloat(s.rate) || 0;
+    return `Shift ${i+1}: <span>£${r.toFixed(2)}</span>`;
+  });
+  const total = shifts.reduce((sum, s) => sum + (parseFloat(s.rate) || 0), 0);
+  document.getElementById('total-calc-text').innerHTML = lines.join(' &nbsp;·&nbsp; ');
+  document.getElementById('total-display').textContent = `£${total.toFixed(2)}`;
+}
+
+function clearForm() {
+  document.getElementById('f-hospital').value = '';
+  document.getElementById('f-location').value = '';
+  shifts.length = 0;
+  shiftIdCounter = 0;
+  addShift();
+  hideSyncBanner();
+}
+
+// ── VIEWS ──
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const idx = ['form','records','settings'].indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (name === 'records') renderRecords();
+  if (name === 'settings') {
+    const s = getSettings();
+    if (s.sheetsUrl) document.getElementById('sheets-url').value = s.sheetsUrl;
+  }
+}
+
+// ── BUILD INVOICE HTML ──
+function buildInvoiceHTML(inv) {
+  const sorted = [...inv.shifts].sort((a,b) => a.date.localeCompare(b.date));
+  const firstParsed = parseDate(sorted[0].date);
+  const shiftLines = sorted.map((s, i) =>
+    `<div class="inv-shift-line">${i+1}) Worked as a Surgical Practitioner on ${formatFull(s.date)}.</div>`
+  ).join('');
+  return `
+    <div class="inv-number">Invoice No: ${inv.number}</div>
+    <div class="inv-header">
+      <div class="inv-sender">
+        ${inv.displayDate}<br>
+        <span class="inv-sender-name">Khanz Healthcare Services Limited</span><br>
+        7 Norgarth Close<br>
+        Batley.<br>
+        WF17 6HF.
+      </div>
+    </div>
+    <div class="inv-to"><strong>${inv.hospital}</strong><br>${inv.location}</div>
+    <div class="inv-body">
+      In respect of Clinical Services provided in ${firstParsed.month}, ${firstParsed.year} @ ${inv.hospital} are documented below:
+      <div class="inv-shifts">${shiftLines}</div>
+    </div>
+    <div class="inv-total">Total Invoice: <strong>£${parseFloat(inv.total).toFixed(2)}</strong></div>
+    <div class="inv-bank">
+      <div class="inv-bank-title">Payment Details</div>
+      Account Name: Khanz Healthcare Services Limited<br>
+      Sort Code: 40-27-15<br>
+      Account No: 25032792<br>
+      HSBC.
+    </div>`;
+}
+
+// ── PREVIEW & SAVE ──
+function previewInvoice() {
+  const hospital = document.getElementById('f-hospital').value.trim();
+  const location = document.getElementById('f-location').value.trim();
+
+  if (!hospital) { showToast('⚠️ Please enter the hospital name.'); return; }
+
+  const validShifts = shifts.filter(s => s.date && s.rate && parseFloat(s.rate) > 0);
+  const emptyDate = shifts.some(s => !s.date);
+  const emptyRate = shifts.some(s => !s.rate || parseFloat(s.rate) <= 0);
+
+  if (emptyDate) { showToast('⚠️ Please fill in all shift dates.'); return; }
+  if (emptyRate) { showToast('⚠️ Please enter a rate for each shift.'); return; }
+
+  const number = generateInvoiceNumber();
+  const total = shifts.reduce((sum, s) => sum + (parseFloat(s.rate) || 0), 0);
+
+  const inv = {
+    number,
+    hospital, location,
+    shifts: shifts.map(s => ({ date: s.date, rate: parseFloat(s.rate) })),
+    total,
+    generatedDate: todayStr(),
+    displayDate: todayDisplay(),
+    saved: Date.now()
+  };
+
+  const records = getRecords();
+  records.unshift(inv);
+  saveRecords(records);
+
+  document.getElementById('invoice-doc').innerHTML = buildInvoiceHTML(inv);
+  document.getElementById('invoice-modal').classList.add('open');
+  showToast('✅ Invoice saved!');
+  syncToSheets(inv);
+  clearForm();
+}
+
+// ── GOOGLE SHEETS SYNC ──
+function showSyncBanner(state, msg) {
+  const b = document.getElementById('sync-banner');
+  const icons = { syncing: '⏳', synced: '✅', failed: '⚠️' };
+  b.className = `sync-banner show ${state}`;
+  document.getElementById('sync-icon').textContent = icons[state];
+  document.getElementById('sync-msg').textContent = msg;
+}
+function hideSyncBanner() {
+  document.getElementById('sync-banner').className = 'sync-banner';
+}
+
+async function syncToSheets(inv) {
+  const { sheetsUrl } = getSettings();
+  if (!sheetsUrl) return;
+
+  showSyncBanner('syncing', 'Syncing to Google Sheets…');
+
+  // Build form-encoded body — avoids CORS preflight from GitHub Pages
+  // Apps Script receives this via e.parameter in doPost
+  const params = new URLSearchParams({
+    invoiceNumber:  inv.number,
+    generatedDate:  inv.displayDate,
+    hospital:       inv.hospital,
+    location:       inv.location,
+    numberOfShifts: inv.shifts.length,
+    shiftDates:     inv.shifts.map(s => formatFull(s.date)).join(', '),
+    shiftRates:     inv.shifts.map(s => `£${s.rate.toFixed(2)}`).join(', '),
+    total:          inv.total.toFixed(2)
+  });
+
+  try {
+    // no-cors: response is opaque but the script still runs and writes the row
+    await fetch(sheetsUrl, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    params.toString()
+    });
+    showSyncBanner('synced', 'Synced to Google Sheets ✓ (check your sheet to confirm).');
+    setTimeout(hideSyncBanner, 5000);
+  } catch (err) {
+    showSyncBanner('failed', 'Sync failed — check your Web App URL in Settings.');
+  }
+}
+
+// ── MODAL ──
+function closeModal() { document.getElementById('invoice-modal').classList.remove('open'); }
+function printInvoice() { window.print(); }
+document.getElementById('invoice-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+// ── RECORDS ──
+function renderRecords() {
+  const records = getRecords();
+  document.getElementById('records-count').textContent = records.length;
+  const container = document.getElementById('records-container');
+  if (records.length === 0) {
+    container.innerHTML = `<div class="records-empty"><div class="empty-icon">🗂️</div><h3>No invoices yet</h3><p>Generate your first invoice to see it here.</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="records-list">${records.map((inv, i) => {
+    const n = inv.shifts.length;
+    const sorted = [...inv.shifts].sort((a,b) => a.date.localeCompare(b.date));
+    const first = parseDate(sorted[0].date);
+    return `
+    <div class="record-card" onclick="viewRecord(${i})">
+      <div class="record-num">${inv.number}</div>
+      <div class="record-info">
+        <div class="record-hospital">${inv.hospital}${inv.location ? ', '+inv.location : ''}</div>
+        <div class="record-date">${n} shift${n!==1?'s':''} · ${first.month} ${first.year} · Generated: ${inv.displayDate||inv.generatedDate}</div>
+      </div>
+      <div class="record-amount">£${parseFloat(inv.total).toFixed(2)}</div>
+      <div class="record-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-outline btn-sm" onclick="viewRecord(${i})">View</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${i})">Delete</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function viewRecord(i) {
+  const inv = getRecords()[i];
+  document.getElementById('invoice-doc').innerHTML = buildInvoiceHTML(inv);
+  document.getElementById('invoice-modal').classList.add('open');
+}
+
+function deleteRecord(i) {
+  if (!confirm('Delete this invoice record? This cannot be undone.')) return;
+  const records = getRecords();
+  records.splice(i, 1);
+  saveRecords(records);
+  renderRecords();
+  showToast('🗑️ Invoice deleted.');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── INIT ──
+addShift();
+</script>
+</body>
+</html>

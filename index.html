@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NK Surgical</title>
+<link rel="icon" type="image/jpeg" href="assets/Fevicon.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/calendar.css">
+<link rel="stylesheet" href="css/invoicing.css">
+</head>
+<body>
+
+<!-- ══ LOGIN GATE ══ -->
+<div id="login-gate">
+  <div class="login-card">
+    <img src="assets/Fevicon.jpg" alt="NK Surgical">
+    <h1>NK Surgical</h1>
+    <p class="tagline">Precision &amp; Care in Surgery</p>
+    <form id="login-form" novalidate>
+      <div class="field-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" autocomplete="username" required>
+      </div>
+      <div class="field-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" autocomplete="current-password" required>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button type="submit" class="btn btn-primary" id="login-submit" style="width:100%;">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══ -->
+<div id="app-shell">
+  <header>
+    <div class="brand">
+      <img src="assets/Fevicon.jpg" alt="NK Surgical">
+      <span class="brand-text">NK <span>Surgical</span></span>
+    </div>
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-page="calendar">Calendar</button>
+      <button class="tab-btn" data-page="invoicing">Invoicing</button>
+    </nav>
+    <div class="header-right">
+      <span id="user-email"></span>
+      <button class="icon-btn" id="logout-btn">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ══ CALENDAR PAGE ══ -->
+    <div class="page active" id="page-calendar">
+      <div class="cal-toolbar">
+        <div class="cal-toolbar-left">
+          <button class="cal-nav-btn" id="cal-prev">‹</button>
+          <div class="cal-period-label" id="cal-period-label">—</div>
+          <button class="cal-nav-btn" id="cal-next">›</button>
+          <button class="btn btn-outline btn-sm cal-today-btn" id="cal-today">Today</button>
+        </div>
+        <div class="cal-view-switch">
+          <button class="cal-view-btn active" data-view="month">Month</button>
+          <button class="cal-view-btn" data-view="week">Week</button>
+          <button class="cal-view-btn" data-view="year">Year</button>
+          <button class="cal-view-btn" data-view="custom">Custom</button>
+        </div>
+        <button class="btn btn-teal btn-sm cal-add-btn" id="cal-add-entry">＋ Add Entry</button>
+      </div>
+
+      <div id="month-view"></div>
+      <div id="week-view" style="display:none;"></div>
+      <div id="year-view" style="display:none;"></div>
+      <div id="custom-view" style="display:none;">
+        <div class="custom-range-bar">
+          <div class="field-group">
+            <label for="custom-start">From</label>
+            <input type="date" id="custom-start">
+          </div>
+          <div class="field-group">
+            <label for="custom-end">To</label>
+            <input type="date" id="custom-end">
+          </div>
+        </div>
+        <div class="custom-summary" id="custom-summary"></div>
+        <div class="card" id="custom-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ INVOICING PAGE ══ -->
+    <div class="page" id="page-invoicing">
+      <div class="inv-page-header">
+        <div class="inv-sub-nav">
+          <button class="inv-sub-btn active" data-inv="form">＋ New Invoice</button>
+          <button class="inv-sub-btn" data-inv="records">Records</button>
+          <button class="inv-sub-btn" data-inv="settings">Settings</button>
+        </div>
+      </div>
+
+      <!-- NEW INVOICE -->
+      <div class="inv-view active" id="inv-view-form">
+        <div class="form-card card">
+          <div class="form-header">
+            <div class="form-header-icon">📄</div>
+            <div>
+              <h2>Generate New Invoice</h2>
+              <p>Add each shift with its own date and rate — total calculates automatically.</p>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Hospital / Client Name</label>
+                <input type="text" id="f-hospital" placeholder="e.g. Pall Mall Hospital">
+              </div>
+              <div class="form-group">
+                <label>Hospital Location</label>
+                <input type="text" id="f-location" placeholder="e.g. Newton-le-Willows">
+              </div>
+            </div>
+
+            <div class="shifts-section">
+              <div class="shifts-header">
+                <div class="shifts-header-left">
+                  <span class="shifts-title">Shifts Worked</span>
+                  <span class="shift-count-badge" id="shift-count">1 shift</span>
+                </div>
+              </div>
+              <div class="shifts-list" id="shifts-list">
+                <div class="shifts-col-headers"><span></span><span>Date</span><span>Rate (£)</span><span></span></div>
+              </div>
+              <div class="shifts-footer">
+                <button class="add-shift-btn" id="add-shift-btn">＋ Add Another Shift</button>
+              </div>
+            </div>
+
+            <div class="total-summary">
+              <div class="total-summary-left" id="total-calc-text">—</div>
+              <div class="total-summary-amount" id="total-display">£0.00</div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-outline" id="inv-clear-btn">Clear</button>
+              <button class="btn btn-teal" id="inv-preview-btn">Preview &amp; Save →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORDS -->
+      <div class="inv-view" id="inv-view-records">
+        <div class="records-header">
+          <div>
+            <h2>Invoice Records <span class="badge" id="records-count">0</span></h2>
+            <p>All saved invoices — click any record to view or reprint.</p>
+          </div>
+          <button class="btn btn-teal btn-sm" id="records-new-btn">＋ New Invoice</button>
+        </div>
+        <div id="records-container"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="inv-view" id="inv-view-settings">
+        <div class="form-card card">
+          <div class="form-header">
+            <div class="form-header-icon">⚙️</div>
+            <div>
+              <h2>Invoice Settings</h2>
+              <p>Details used on every generated invoice document.</p>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="settings-row">
+              <label>Company Name</label>
+              <input type="text" id="s-company-name" placeholder="Khanz Healthcare Services Limited">
+            </div>
+            <div class="settings-row">
+              <label>Address</label>
+              <input type="text" id="s-address" placeholder="7 Norgarth Close, Batley, WF17 6HF">
+            </div>
+            <div class="settings-row">
+              <label>Bank Account Name</label>
+              <input type="text" id="s-bank-name" placeholder="Khanz Healthcare Services Limited">
+            </div>
+            <div class="settings-row">
+              <label>Sort Code</label>
+              <input type="text" id="s-sort-code" placeholder="40-27-15">
+            </div>
+            <div class="settings-row">
+              <label>Account Number</label>
+              <input type="text" id="s-account-number" placeholder="25032792">
+            </div>
+            <div class="settings-row">
+              <label>Bank Name</label>
+              <input type="text" id="s-bank" placeholder="HSBC">
+            </div>
+            <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none;">
+              <button class="btn btn-teal" id="settings-save-btn">Save Settings</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ DAY DETAIL MODAL (calendar) ══ -->
+<div class="modal-overlay" id="day-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="day-modal-title">—</h3>
+      <button class="modal-close" id="day-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="assignment-list" id="assignment-list"></div>
+      <button class="btn btn-outline btn-sm" id="day-add-entry-btn" style="width:100%;">＋ Add Entry for This Day</button>
+
+      <form id="entry-form" class="entry-form-grid" style="display:none; margin-top:18px;">
+        <div class="day-off-toggle">
+          <input type="checkbox" id="entry-day-off">
+          <label for="entry-day-off">This is a day off</label>
+        </div>
+        <div id="entry-work-fields">
+          <div class="field-group">
+            <label for="entry-surgeon">Surgeon</label>
+            <input type="text" id="entry-surgeon" list="surgeon-list" placeholder="e.g. Rob">
+            <datalist id="surgeon-list"></datalist>
+          </div>
+          <div class="field-group">
+            <label for="entry-hospital">Hospital</label>
+            <input type="text" id="entry-hospital" list="hospital-list" placeholder="e.g. Alexandra">
+            <datalist id="hospital-list"></datalist>
+          </div>
+          <div class="field-group">
+            <label for="entry-note">Note (optional)</label>
+            <input type="text" id="entry-note" placeholder="e.g. AM, Lim">
+          </div>
+          <div class="field-group">
+            <label>Colour</label>
+            <div class="color-swatch-row" id="entry-color-row"></div>
+          </div>
+          <div class="cancelled-toggle">
+            <input type="checkbox" id="entry-cancelled">
+            <label for="entry-cancelled">Mark as cancelled</label>
+          </div>
+        </div>
+        <input type="hidden" id="entry-id">
+        <input type="hidden" id="entry-date">
+      </form>
+    </div>
+    <div class="modal-footer" id="entry-form-footer" style="display:none;">
+      <button type="button" class="btn btn-outline btn-sm" id="entry-cancel-btn">Cancel</button>
+      <button type="submit" form="entry-form" class="btn btn-teal btn-sm" id="entry-save-btn">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INVOICE PREVIEW MODAL ══ -->
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal invoice-modal">
+    <div class="invoice-modal-actions modal-header">
+      <div></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline btn-sm" id="invoice-modal-close">✕ Close</button>
+        <button class="btn btn-teal btn-sm" id="invoice-print-btn">🖨 Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="invoice-doc" id="invoice-doc"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
