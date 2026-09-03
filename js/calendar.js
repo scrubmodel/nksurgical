@@ -113,7 +113,7 @@ function timeRangeLabel(a) {
 }
 
 function statusStarHtml(a, size) {
-  if (!a.surgeon) return '';
+  if (a.is_day_off) return '';
   const status = a.invoice_status || 'pending';
   return `<span class="status-star ${size || ''}" style="color:${STATUS_COLOR[status]}" title="${STATUS_LABEL[status]}">★</span>`;
 }
@@ -329,13 +329,13 @@ function renderAssignmentList(iso) {
       <div class="assignment-label">
         <span class="${a.status === 'cancelled' ? 'lbl-cancelled' : ''}">${escapeHtml(entryLabel(a))}</span>
         ${meta ? `<span class="lbl-note">${escapeHtml(meta)}</span>` : ''}
-        ${a.surgeon && status === 'pending' ? `
+        ${!a.is_day_off && status === 'pending' ? `
           <label class="prime-invoice-toggle">
             <input type="checkbox" class="prime-checkbox" ${primedForInvoice.has(a.id) ? 'checked' : ''}>
             Send to Invoicing
           </label>` : ''}
       </div>
-      ${a.surgeon ? `<button class="status-star-btn ${status === 'pending' ? 'disabled' : ''}" style="color:${STATUS_COLOR[status]}" title="${STATUS_LABEL[status]}${status !== 'pending' ? ' — click to change' : ''}">★</button>` : ''}
+      ${!a.is_day_off ? `<button class="status-star-btn ${status === 'pending' ? 'disabled' : ''}" style="color:${STATUS_COLOR[status]}" title="${STATUS_LABEL[status]}${status !== 'pending' ? ' — click to change' : ''}">★</button>` : ''}
       <div class="assignment-row-actions">
         <button class="edit-btn" title="Edit">✎</button>
         <button class="delete-btn" title="Delete">🗑</button>

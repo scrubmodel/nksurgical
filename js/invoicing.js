@@ -279,12 +279,15 @@ async function previewInvoice() {
 function closeInvoiceModal() { document.getElementById('invoice-modal').classList.remove('open'); }
 
 // ── PENDING ──
+function pendingGroupKey(a) { return a.surgeon || a.hospital; }
+function pendingGroupType(a) { return a.surgeon ? 'surgeon' : 'hospital'; }
+
 async function loadPending() {
   const { data, error } = await supabase
     .from('assignments')
     .select('*')
     .eq('invoice_status', 'pending')
-    .not('surgeon', 'is', null)
+    .eq('is_day_off', false)
     .order('date');
   if (error) { showToast('Could not load pending bookings: ' + error.message); return; }
   pendingAssignments = data || [];
@@ -297,28 +300,32 @@ async function refreshPendingCount() {
     .from('assignments')
     .select('id', { count: 'exact', head: true })
     .eq('invoice_status', 'pending')
-    .not('surgeon', 'is', null);
+    .eq('is_day_off', false);
   document.getElementById('pending-count').textContent = count || 0;
 }
 
 function renderPending() {
   const container = document.getElementById('pending-container');
   if (pendingAssignments.length === 0) {
-    container.innerHTML = `<div class="card pending-empty">No bookings waiting to be invoiced. Add a surgeon to a calendar entry, or send one to invoicing from its day view.</div>`;
+    container.innerHTML = `<div class="card pending-empty">No bookings waiting to be invoiced. Add a surgeon or hospital to a calendar entry, then send it to invoicing from its day view.</div>`;
     return;
   }
 
   const groups = new Map();
   for (const a of pendingAssignments) {
-    if (!groups.has(a.surgeon)) groups.set(a.surgeon, []);
-    groups.get(a.surgeon).push(a);
+    const key = pendingGroupKey(a);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(a);
   }
 
-  container.innerHTML = [...groups.entries()].map(([surgeon, entries]) => `
-    <div class="card pending-group" data-surgeon="${escapeHtml(surgeon)}" style="padding:16px;">
+  container.innerHTML = [...groups.entries()].map(([name, entries]) => {
+    const type = pendingGroupType(entries[0]);
+    return `
+    <div class="card pending-group" data-name="${escapeHtml(name)}" style="padding:16px;">
       <div class="pending-group-header">
         <input type="checkbox" class="group-select-all">
-        <span>${escapeHtml(surgeon)}</span>
+        <span>${escapeHtml(name)}</span>
+        <span class="pending-group-type">${type === 'surgeon' ? 'Surgeon' : 'Hospital'}</span>
         <span class="badge">${entries.length}</span>
       </div>
       <div class="pending-rows">
@@ -326,17 +333,18 @@ function renderPending() {
           <label class="pending-row">
             <input type="checkbox" class="pending-checkbox" value="${a.id}" ${primedForInvoice.has(a.id) ? 'checked' : ''}>
             <span class="pending-row-date">${formatFull(a.date)}</span>
-            <span class="pending-row-meta">${[a.hospital, a.start_time && a.end_time ? `${a.start_time}–${a.end_time}` : '', a.note].filter(Boolean).map(escapeHtml).join(' · ') || '—'}</span>
+            <span class="pending-row-meta">${[type === 'surgeon' ? a.hospital : a.surgeon, a.start_time && a.end_time ? `${a.start_time}–${a.end_time}` : '', a.note].filter(Boolean).map(escapeHtml).join(' · ') || '—'}</span>
           </label>`).join('')}
       </div>
       <div class="pending-action-bar">
         <span class="selected-count" style="font-size:0.82rem; color:var(--muted);">0 selected</span>
         <button class="btn btn-teal btn-sm generate-btn" disabled>Generate Invoice</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   container.querySelectorAll('.pending-group').forEach((groupEl) => {
-    const surgeon = groupEl.dataset.surgeon;
+    const name = groupEl.dataset.name;
     const checkboxes = [...groupEl.querySelectorAll('.pending-checkbox')];
     const countEl = groupEl.querySelector('.selected-count');
     const generateBtn = groupEl.querySelector('.generate-btn');
@@ -363,16 +371,17 @@ function renderPending() {
     generateBtn.addEventListener('click', () => {
       const selectedIds = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
       const selected = pendingAssignments.filter((a) => selectedIds.includes(a.id));
-      startInvoiceFromPending(surgeon, selected);
+      startInvoiceFromPending(name, selected);
     });
 
     refreshGroupUI();
   });
 }
 
-function startInvoiceFromPending(surgeon, selected) {
-  clearForm('surgeon');
-  document.getElementById('f-hospital').value = surgeon;
+function startInvoiceFromPending(name, selected) {
+  const type = pendingGroupType(selected[0]);
+  clearForm(type);
+  document.getElementById('f-hospital').value = name;
   pendingSourceIds = selected.map((a) => a.id);
   shifts = [];
   shiftIdCounter = 0;
@@ -392,13 +401,13 @@ async function loadRecords() {
   if (error) { showToast('Could not load records: ' + error.message); return; }
   records = data || [];
 
-  const surgeonInvoiceIds = records.filter((r) => r.recipient_type === 'surgeon').map((r) => r.id);
+  const invoiceIds = records.map((r) => r.id);
   recordStatusById = new Map();
-  if (surgeonInvoiceIds.length) {
+  if (invoiceIds.length) {
     const { data: linked, error: linkedError } = await supabase
       .from('assignments')
       .select('invoice_id, invoice_status')
-      .in('invoice_id', surgeonInvoiceIds);
+      .in('invoice_id', invoiceIds);
     if (!linkedError) {
       const grouped = new Map();
       for (const a of linked || []) {
@@ -465,8 +474,6 @@ async function viewRecord(id) {
   document.getElementById('invoice-modal').classList.add('open');
 
   const panel = document.getElementById('invoice-payment-panel');
-  if (inv.recipient_type !== 'surgeon') { panel.style.display = 'none'; return; }
-
   const { data: linked, error } = await supabase.from('assignments').select('*').eq('invoice_id', id).order('date');
   if (error || !linked || linked.length === 0) { panel.style.display = 'none'; return; }
 
