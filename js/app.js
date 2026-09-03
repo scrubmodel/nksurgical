@@ -1,6 +1,7 @@
 import { initAuth, initLoginForm, applyAuthUI, onAuthChange } from './auth.js';
 import { initCalendar } from './calendar.js';
 import { initInvoicing } from './invoicing.js';
+import { initReports } from './reports.js';
 import { initLock } from './lock.js';
 
 function setupTabNav() {
@@ -26,6 +27,7 @@ async function boot() {
       initLock();
       await initCalendar();
       await initInvoicing();
+      await initReports();
     }
   });
   await initAuth();

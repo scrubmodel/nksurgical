@@ -423,6 +423,9 @@ async function loadRecords() {
       }
     }
   }
+  for (const inv of records) {
+    if (!recordStatusById.has(inv.id)) recordStatusById.set(inv.id, inv.paid_at ? 'paid' : 'submitted');
+  }
 
   renderRecords();
 }
@@ -479,10 +482,38 @@ async function viewRecord(id) {
 
   const panel = document.getElementById('invoice-payment-panel');
   const { data: linked, error } = await supabase.from('assignments').select('*').eq('invoice_id', id).order('date');
-  if (error || !linked || linked.length === 0) { panel.style.display = 'none'; return; }
+  if (error) { panel.style.display = 'none'; return; }
 
-  renderPaymentPanel(linked);
+  if (linked && linked.length > 0) {
+    renderPaymentPanel(linked);
+  } else {
+    renderWholeInvoicePaymentPanel(inv);
+  }
   panel.style.display = '';
+}
+
+function renderWholeInvoicePaymentPanel(inv) {
+  const panel = document.getElementById('invoice-payment-panel');
+  const isPaid = !!inv.paid_at;
+  panel.innerHTML = `
+    <div class="payment-panel-title">Payment Status</div>
+    <div class="payment-line" data-id="${inv.id}">
+      <span class="payment-line-date">${isPaid ? 'Paid ' + formatFull(inv.paid_at.slice(0, 10)) : 'Not yet paid'}</span>
+      <button class="payment-status-btn" style="background:${isPaid ? 'var(--success-pale)' : '#f5e9d0'}; color:${isPaid ? 'var(--success)' : '#b8862a'};">
+        ${isPaid ? '✓ Paid' : 'Mark Paid'}
+      </button>
+    </div>`;
+
+  panel.querySelector('.payment-status-btn').addEventListener('click', async () => {
+    if (guardLocked()) return;
+    const next = isPaid ? null : new Date().toISOString();
+    const { error } = await supabase.from('invoices').update({ paid_at: next }).eq('id', inv.id);
+    if (error) { showToast('Update failed: ' + error.message); return; }
+    inv.paid_at = next;
+    renderWholeInvoicePaymentPanel(inv);
+    showToast(next ? '✅ Marked as paid.' : 'Marked as unpaid.');
+    await loadRecords();
+  });
 }
 
 function renderPaymentPanel(linked) {

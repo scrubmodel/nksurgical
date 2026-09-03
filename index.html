@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/calendar.css">
 <link rel="stylesheet" href="css/invoicing.css">
+<link rel="stylesheet" href="css/reports.css">
 </head>
 <body>
 
@@ -49,6 +50,7 @@
     <nav class="tab-nav">
       <button class="tab-btn active" data-page="calendar">Calendar</button>
       <button class="tab-btn" data-page="invoicing">Invoicing</button>
+      <button class="tab-btn" data-page="reports">Reports</button>
     </nav>
     <div class="header-right">
       <span id="user-email"></span>
@@ -218,6 +220,93 @@
               <button class="btn btn-teal" id="settings-save-btn">Save Settings</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ REPORTS PAGE ══ -->
+    <div class="page" id="page-reports">
+      <div class="reports-toolbar">
+        <div class="reports-toolbar-left">
+          <button class="cal-nav-btn" id="rep-prev">‹</button>
+          <div class="cal-period-label" id="rep-period-label">—</div>
+          <button class="cal-nav-btn" id="rep-next">›</button>
+          <button class="btn btn-outline btn-sm" id="rep-today">This Month</button>
+        </div>
+        <button class="btn btn-outline btn-sm" id="rep-export-btn">⬇ Export CSV</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <div class="kpi-label">Invoiced This Month</div>
+          <div class="kpi-value" id="kpi-invoiced">£0.00</div>
+          <div class="kpi-delta" id="kpi-invoiced-delta"></div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Collected This Month</div>
+          <div class="kpi-value" id="kpi-collected">£0.00</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Average Shift Earnings</div>
+          <div class="kpi-value" id="kpi-average">£0.00</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Unbilled Bookings</div>
+          <div class="kpi-value" id="kpi-unbilled">0</div>
+          <div class="kpi-sub">Completed, not yet on an invoice</div>
+        </div>
+      </div>
+
+      <div class="card reports-section">
+        <h3>Shift Activity</h3>
+        <div class="ops-status-row">
+          <div class="ops-stat ops-completed">
+            <span class="ops-count" id="ops-completed">0</span>
+            <span class="ops-label">Completed</span>
+          </div>
+          <div class="ops-stat ops-upcoming">
+            <span class="ops-count" id="ops-upcoming">0</span>
+            <span class="ops-label">Booked / Upcoming</span>
+          </div>
+          <div class="ops-stat ops-cancelled">
+            <span class="ops-count" id="ops-cancelled">0</span>
+            <span class="ops-label">Cancelled</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card reports-section">
+        <h3>Invoice Pipeline <span class="reports-section-hint">— current, not limited to the selected month</span></h3>
+        <div class="pipeline-row">
+          <div class="pipeline-item">
+            <div class="pipeline-count" id="pipeline-submission-count">0</div>
+            <div class="pipeline-label">Pending Submission</div>
+            <button class="btn btn-outline btn-sm" id="pipeline-goto-pending">Go to Pending →</button>
+          </div>
+          <div class="pipeline-item">
+            <div class="pipeline-count" id="pipeline-payment-count">£0.00</div>
+            <div class="pipeline-label">Pending Payment <span id="pipeline-payment-invoices" class="pipeline-sub"></span></div>
+          </div>
+          <div class="pipeline-item pipeline-overdue">
+            <div class="pipeline-count" id="pipeline-overdue-count">£0.00</div>
+            <div class="pipeline-label">Overdue (30+ days) <span id="pipeline-overdue-invoices" class="pipeline-sub"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card reports-section">
+        <h3>Revenue — Last 12 Months</h3>
+        <div id="revenue-chart"></div>
+      </div>
+
+      <div class="reports-columns">
+        <div class="card reports-section">
+          <h3>Revenue by Surgeon</h3>
+          <div id="revenue-by-surgeon"></div>
+        </div>
+        <div class="card reports-section">
+          <h3>Revenue by Hospital</h3>
+          <div id="revenue-by-hospital"></div>
         </div>
       </div>
     </div>
