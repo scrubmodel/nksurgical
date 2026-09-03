@@ -112,6 +112,8 @@ header {
   transition: all 0.18s;
 }
 .icon-btn:hover { border-color: var(--teal-light); color: var(--teal-light); }
+.lock-btn { font-size: 1rem; padding: 6px 11px; line-height: 1; }
+.lock-btn.locked { border-color: #e8a23d; background: rgba(232,162,61,0.15); }
 
 main { max-width: 1200px; margin: 0 auto; padding: 28px 20px 60px; }
 .page { display: none; }

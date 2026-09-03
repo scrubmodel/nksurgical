@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { MONTHS, getOrdinal, fromISODate, todayISO, showToast, escapeHtml } from './util.js';
 import { primedForInvoice, loadAssignments as reloadCalendarAssignments } from './calendar.js';
+import { guardLocked } from './lock.js';
 
 const DEFAULT_SETTINGS = {
   companyName: 'Khanz Healthcare Services Limited',
@@ -36,9 +37,9 @@ export async function initInvoicing() {
   });
   document.getElementById('records-new-btn').addEventListener('click', () => { clearForm('hospital'); showInvView('form'); });
 
-  document.getElementById('add-shift-btn').addEventListener('click', () => addShift());
+  document.getElementById('add-shift-btn').addEventListener('click', () => { if (guardLocked()) return; addShift(); });
   document.getElementById('inv-clear-btn').addEventListener('click', () => clearForm('hospital'));
-  document.getElementById('inv-preview-btn').addEventListener('click', previewInvoice);
+  document.getElementById('inv-preview-btn').addEventListener('click', () => { if (!guardLocked()) previewInvoice(); });
 
   document.getElementById('settings-save-btn').addEventListener('click', saveSettingsFromForm);
 
@@ -111,6 +112,7 @@ function addShift(dateVal, rateVal) {
 }
 
 function removeShift(id) {
+  if (guardLocked()) return;
   const idx = shifts.findIndex((s) => s.id === id);
   if (idx > -1) shifts.splice(idx, 1);
   renderShifts();
@@ -369,6 +371,7 @@ function renderPending() {
       refreshGroupUI();
     });
     generateBtn.addEventListener('click', () => {
+      if (guardLocked()) return;
       const selectedIds = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
       const selected = pendingAssignments.filter((a) => selectedIds.includes(a.id));
       startInvoiceFromPending(name, selected);
@@ -458,6 +461,7 @@ function renderRecords() {
     card.addEventListener('click', () => viewRecord(id));
     card.querySelector('.delete-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
+      if (guardLocked()) return;
       if (!confirm('Delete this invoice record? This cannot be undone.')) return;
       const { error } = await supabase.from('invoices').delete().eq('id', id);
       if (error) { showToast('Delete failed: ' + error.message); return; }
@@ -496,6 +500,7 @@ function renderPaymentPanel(linked) {
 
   panel.querySelectorAll('.payment-status-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (guardLocked()) return;
       const id = btn.closest('.payment-line').dataset.id;
       const current = linked.find((a) => a.id === id);
       const next = current.invoice_status === 'paid' ? 'submitted' : 'paid';

@@ -1,6 +1,7 @@
 import { initAuth, initLoginForm, applyAuthUI, onAuthChange } from './auth.js';
 import { initCalendar } from './calendar.js';
 import { initInvoicing } from './invoicing.js';
+import { initLock } from './lock.js';
 
 function setupTabNav() {
   document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -22,6 +23,7 @@ async function boot() {
     if (session && !appInitialized) {
       appInitialized = true;
       setupTabNav();
+      initLock();
       await initCalendar();
       await initInvoicing();
     }

@@ -3,6 +3,7 @@ import {
   MONTHS, WEEKDAYS, PALETTE, colorForLabel, toISODate, fromISODate, todayISO,
   formatShortDate, mondayIndex, startOfWeek, addDays, addMonths, isSameDate, showToast, escapeHtml,
 } from './util.js';
+import { guardLocked } from './lock.js';
 
 let viewMode = 'month';
 let anchorDate = new Date();
@@ -35,10 +36,10 @@ export async function initCalendar() {
     btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
-  document.getElementById('cal-add-entry').addEventListener('click', () => openDayModal(todayISO()));
+  document.getElementById('cal-add-entry').addEventListener('click', () => { if (guardLocked()) return; openDayModal(todayISO()); });
   document.getElementById('day-modal-close').addEventListener('click', closeDayModal);
   document.getElementById('day-modal').addEventListener('click', (e) => { if (e.target.id === 'day-modal') closeDayModal(); });
-  document.getElementById('day-add-entry-btn').addEventListener('click', () => showEntryForm());
+  document.getElementById('day-add-entry-btn').addEventListener('click', () => { if (guardLocked()) return; showEntryForm(); });
   document.getElementById('entry-cancel-btn').addEventListener('click', hideEntryForm);
   document.getElementById('entry-day-off').addEventListener('change', (e) => {
     document.getElementById('entry-work-fields').style.display = e.target.checked ? 'none' : '';
@@ -345,6 +346,7 @@ function renderAssignmentList(iso) {
 
   listEl.querySelectorAll('.edit-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (guardLocked()) return;
       const id = btn.closest('.assignment-row').dataset.id;
       const a = entries.find((e) => e.id === id);
       showEntryForm(a);
@@ -352,6 +354,7 @@ function renderAssignmentList(iso) {
   });
   listEl.querySelectorAll('.delete-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (guardLocked()) return;
       const id = btn.closest('.assignment-row').dataset.id;
       if (!confirm('Delete this entry?')) return;
       const { error } = await supabase.from('assignments').delete().eq('id', id);
@@ -364,6 +367,7 @@ function renderAssignmentList(iso) {
   });
   listEl.querySelectorAll('.prime-checkbox').forEach((cb) => {
     cb.addEventListener('change', () => {
+      if (guardLocked()) { cb.checked = !cb.checked; return; }
       const id = cb.closest('.assignment-row').dataset.id;
       if (cb.checked) { primedForInvoice.add(id); showToast('Added to invoicing queue.'); }
       else primedForInvoice.delete(id);
@@ -371,6 +375,7 @@ function renderAssignmentList(iso) {
   });
   listEl.querySelectorAll('.status-star-btn:not(.disabled)').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (guardLocked()) return;
       const id = btn.closest('.assignment-row').dataset.id;
       const a = entries.find((e) => e.id === id);
       const next = a.invoice_status === 'submitted' ? 'paid' : 'submitted';
@@ -440,6 +445,7 @@ function hideEntryForm() {
 
 async function onSaveEntry(e) {
   e.preventDefault();
+  if (guardLocked()) return;
   const iso = document.getElementById('entry-date').value;
   const isDayOff = document.getElementById('entry-day-off').checked;
   const surgeon = document.getElementById('entry-surgeon').value.trim();
