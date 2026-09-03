@@ -61,6 +61,16 @@ export function initLoginForm() {
 
   document.getElementById('logout-btn').addEventListener('click', signOut);
 
+  document.getElementById('forgot-password-btn').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { errorEl.textContent = 'Enter your email above first, then click "Forgot password?".'; return; }
+    errorEl.style.color = '';
+    errorEl.textContent = '';
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+    errorEl.style.color = error ? '' : 'var(--success)';
+    errorEl.textContent = error ? error.message : 'Check your email for a password reset link.';
+  });
+
   const setPasswordForm = document.getElementById('set-password-form');
   const setPasswordError = document.getElementById('set-password-error');
   const setPasswordSubmit = document.getElementById('set-password-submit');
