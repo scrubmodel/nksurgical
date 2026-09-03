@@ -7,5 +7,5 @@
 //
 // Fill these in once the NK Surgical Supabase project exists:
 //   Project Settings -> API -> Project URL / anon public key
-export const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
-export const SUPABASE_ANON_KEY = 'YOUR-ANON-PUBLIC-KEY';
+export const SUPABASE_URL = 'https://fnqfasxlohudslpmncfe.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_eSGyf__jao1tTMewCULILA_DaWx03-z';
