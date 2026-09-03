@@ -1,0 +1,13 @@
+{
+  "name": "NK Surgical",
+  "short_name": "NK Surgical",
+  "description": "Precision & Care in Surgery",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7fa",
+  "theme_color": "#0a1f3d",
+  "icons": [
+    { "src": "assets/apple-touch-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

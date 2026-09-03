@@ -1,7 +1,23 @@
 import { supabase } from './supabaseClient.js';
 
+// Accounts are created directly (by an admin, via the Supabase dashboard/API)
+// with username + password — no email/sign-up flow. Supabase Auth still
+// needs an email internally, so a bare username is mapped to a synthetic,
+// non-deliverable address under this fixed domain. A value that already
+// contains "@" is used as-is, so a real email still works if one was set
+// up that way.
+const AUTH_DOMAIN = 'nksurgical.local';
+
+function resolveLoginEmail(input) {
+  const trimmed = input.trim();
+  return trimmed.includes('@') ? trimmed : `${trimmed.toLowerCase()}@${AUTH_DOMAIN}`;
+}
+
+export function usernameFromEmail(email) {
+  return (email || '').split('@')[0];
+}
+
 let currentSession = null;
-let passwordRecovery = false;
 const listeners = [];
 
 export function onAuthChange(fn) {
@@ -21,14 +37,11 @@ export function getSession() {
 export async function initAuth() {
   const { data } = await supabase.auth.getSession();
   notify(data.session);
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') passwordRecovery = true;
-    notify(session);
-  });
+  supabase.auth.onAuthStateChange((_event, session) => notify(session));
 }
 
-export async function signIn(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+export async function signIn(usernameOrEmail, password) {
+  const { error } = await supabase.auth.signInWithPassword({ email: resolveLoginEmail(usernameOrEmail), password });
   return error;
 }
 
@@ -47,82 +60,30 @@ export function initLoginForm() {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Signing in…';
 
-    const email = document.getElementById('login-email').value.trim();
+    const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    const error = await signIn(email, password);
+    const error = await signIn(username, password);
 
     submitBtn.disabled = false;
     submitBtn.textContent = 'Sign In';
 
     if (error) {
-      errorEl.textContent = 'Incorrect email or password.';
+      errorEl.textContent = 'Incorrect username or password.';
     }
   });
 
   document.getElementById('logout-btn').addEventListener('click', signOut);
-
-  document.getElementById('forgot-password-btn').addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value.trim();
-    if (!email) { errorEl.textContent = 'Enter your email above first, then click "Forgot password?".'; return; }
-    errorEl.style.color = '';
-    errorEl.textContent = '';
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
-    errorEl.style.color = error ? '' : 'var(--success)';
-    errorEl.textContent = error ? error.message : 'Check your email for a password reset link.';
-  });
-
-  const setPasswordForm = document.getElementById('set-password-form');
-  const setPasswordError = document.getElementById('set-password-error');
-  const setPasswordSubmit = document.getElementById('set-password-submit');
-
-  setPasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    setPasswordError.textContent = '';
-
-    const pw = document.getElementById('new-password').value;
-    const pwConfirm = document.getElementById('new-password-confirm').value;
-    if (pw.length < 6) { setPasswordError.textContent = 'Password must be at least 6 characters.'; return; }
-    if (pw !== pwConfirm) { setPasswordError.textContent = 'Passwords do not match.'; return; }
-
-    setPasswordSubmit.disabled = true;
-    setPasswordSubmit.textContent = 'Saving…';
-
-    const { error } = await supabase.auth.updateUser({ password: pw });
-
-    setPasswordSubmit.disabled = false;
-    setPasswordSubmit.textContent = 'Set Password & Continue';
-
-    if (error) {
-      setPasswordError.textContent = error.message;
-      return;
-    }
-    passwordRecovery = false;
-    applyAuthUI(currentSession);
-  });
 }
 
 export function applyAuthUI(session) {
   const gate = document.getElementById('login-gate');
   const shell = document.getElementById('app-shell');
-  const loginForm = document.getElementById('login-form');
-  const setPasswordForm = document.getElementById('set-password-form');
-
-  if (session && passwordRecovery) {
-    gate.classList.add('show');
-    shell.classList.remove('show');
-    loginForm.style.display = 'none';
-    setPasswordForm.style.display = '';
-    return;
-  }
-
-  loginForm.style.display = '';
-  setPasswordForm.style.display = 'none';
 
   if (session) {
     gate.classList.remove('show');
     shell.classList.add('show');
-    const emailEl = document.getElementById('user-email');
-    if (emailEl) emailEl.textContent = session.user.email;
+    const nameEl = document.getElementById('user-email');
+    if (nameEl) nameEl.textContent = usernameFromEmail(session.user.email);
   } else {
     gate.classList.add('show');
     shell.classList.remove('show');
