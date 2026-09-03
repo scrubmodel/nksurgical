@@ -30,6 +30,20 @@
       <div class="login-error" id="login-error"></div>
       <button type="submit" class="btn btn-primary" id="login-submit" style="width:100%;">Sign In</button>
     </form>
+
+    <form id="set-password-form" novalidate style="display:none;">
+      <p style="font-size:0.85rem; color:var(--slate); margin-bottom:20px;">Choose a password for your account.</p>
+      <div class="field-group">
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" autocomplete="new-password" required minlength="6">
+      </div>
+      <div class="field-group">
+        <label for="new-password-confirm">Confirm Password</label>
+        <input type="password" id="new-password-confirm" autocomplete="new-password" required minlength="6">
+      </div>
+      <div class="login-error" id="set-password-error"></div>
+      <button type="submit" class="btn btn-primary" id="set-password-submit" style="width:100%;">Set Password &amp; Continue</button>
+    </form>
   </div>
 </div>
 
