@@ -41,12 +41,17 @@
 .month-day.today .day-num { color: var(--teal); font-weight: 700; }
 .day-entries { display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
 .entry-chip {
+  display: flex; align-items: center; gap: 4px;
   font-size: 0.68rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; color: #fff;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;
+  line-height: 1.5;
 }
-.entry-chip.cancelled { text-decoration: line-through; opacity: 0.55; }
+.entry-chip-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-chip.cancelled .entry-chip-label { text-decoration: line-through; opacity: 0.55; }
 .entry-chip.day-off { background: var(--muted) !important; }
 .day-more { font-size: 0.66rem; color: var(--muted); font-weight: 600; padding-left: 6px; }
+
+.status-star { flex-shrink: 0; font-size: 0.8rem; line-height: 1; text-shadow: 0 0 2px rgba(0,0,0,0.4); }
+.status-star.sm { font-size: 0.62rem; }
 
 /* ── WEEK VIEW ── */
 .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--border); gap: 1px; }
@@ -58,9 +63,10 @@
 .week-day-num { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--navy); font-weight: 600; }
 .week-day-col.today .week-day-num { color: var(--teal); }
 .week-entry { font-size: 0.72rem; font-weight: 600; padding: 5px 8px; border-radius: 5px; color: #fff; line-height: 1.4; }
-.week-entry.cancelled { text-decoration: line-through; opacity: 0.55; }
+.week-entry-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.week-entry.cancelled .week-entry-top span:first-child { text-decoration: line-through; opacity: 0.55; }
 .week-entry.day-off { background: var(--muted) !important; }
-.week-entry .entry-note { display: block; font-weight: 400; opacity: 0.85; font-size: 0.66rem; }
+.week-entry .entry-note { display: block; font-weight: 400; opacity: 0.85; font-size: 0.66rem; margin-top: 2px; }
 
 /* ── YEAR VIEW ── */
 .year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
@@ -101,6 +107,13 @@
 .assignment-label { flex: 1; font-size: 0.88rem; font-weight: 500; min-width: 0; }
 .assignment-label .lbl-cancelled { text-decoration: line-through; opacity: 0.55; }
 .assignment-label .lbl-note { display: block; font-size: 0.74rem; color: var(--muted); font-weight: 400; }
+.prime-invoice-toggle { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.75rem; font-weight: 500; color: var(--slate); text-transform: none; cursor: pointer; }
+.prime-invoice-toggle input { width: auto; margin: 0; }
+.status-star-btn {
+  flex-shrink: 0; background: none; border: none; font-size: 1.1rem; line-height: 1; padding: 0 2px;
+  cursor: pointer; text-shadow: 0 0 2px rgba(0,0,0,0.15);
+}
+.status-star-btn.disabled { cursor: default; opacity: 0.6; }
 .assignment-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .assignment-row-actions button { background: none; border: none; cursor: pointer; padding: 4px 6px; font-size: 0.85rem; color: var(--muted); border-radius: 4px; }
 .assignment-row-actions button:hover { color: var(--ink); background: var(--border); }
@@ -112,6 +125,9 @@
 .cancelled-toggle { display: flex; align-items: center; gap: 8px; }
 .cancelled-toggle input { width: auto; }
 .cancelled-toggle label { text-transform: none; font-size: 0.82rem; font-weight: 500; color: var(--ink); margin: 0; }
+.time-range-row { display: flex; gap: 14px; }
+.time-range-row .field-group { flex: 1; }
+.field-hint { text-transform: none; font-weight: 400; color: var(--muted); letter-spacing: 0; font-size: 0.72rem; }
 
 datalist {}
 .color-swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -131,4 +147,5 @@ datalist {}
   .week-grid { grid-template-columns: 1fr; }
   .week-day-col { min-height: auto; }
   .custom-day-date { width: 90px; font-size: 0.7rem; }
+  .time-range-row { flex-direction: column; gap: 14px; }
 }

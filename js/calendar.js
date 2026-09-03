@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import {
   MONTHS, WEEKDAYS, PALETTE, colorForLabel, toISODate, fromISODate, todayISO,
-  formatShortDate, mondayIndex, startOfWeek, addDays, addMonths, isSameDate, showToast,
+  formatShortDate, mondayIndex, startOfWeek, addDays, addMonths, isSameDate, showToast, escapeHtml,
 } from './util.js';
 
 let viewMode = 'month';
@@ -13,9 +13,18 @@ let allAssignments = [];
 let byDate = new Map();
 let surgeonNames = [];
 let hospitalNames = [];
+let surgeonColorMap = new Map();
 
 let manualColor = null;
 let editingId = null;
+
+// Entries the user has flagged from the calendar to be billed. The
+// Invoicing -> Pending screen pre-checks whatever is in here; both screens
+// read/write the same Set so priming from either side stays in sync.
+export const primedForInvoice = new Set();
+
+const STATUS_LABEL = { pending: 'Invoice Pending', submitted: 'Invoice Submitted', paid: 'Invoice Paid' };
+const STATUS_COLOR = { pending: '#9aa4b2', submitted: '#b8862a', paid: '#1c8c56' };
 
 export async function initCalendar() {
   document.getElementById('cal-prev').addEventListener('click', () => navigate(-1));
@@ -34,6 +43,7 @@ export async function initCalendar() {
   document.getElementById('entry-day-off').addEventListener('change', (e) => {
     document.getElementById('entry-work-fields').style.display = e.target.checked ? 'none' : '';
   });
+  document.getElementById('entry-surgeon').addEventListener('input', onSurgeonFieldInput);
   document.getElementById('entry-form').addEventListener('submit', onSaveEntry);
 
   const today = new Date();
@@ -45,10 +55,24 @@ export async function initCalendar() {
   document.getElementById('custom-end').addEventListener('change', (e) => { customEnd = fromISODate(e.target.value); renderCustom(); });
 
   buildColorSwatches();
+  await loadSurgeons();
   await loadAssignments();
 }
 
-async function loadAssignments() {
+export async function loadSurgeons() {
+  const { data, error } = await supabase.from('surgeons').select('*').order('name');
+  if (error) { showToast('Could not load surgeons: ' + error.message); return; }
+  surgeonColorMap = new Map((data || []).map((s) => [s.name, s.color]));
+}
+
+async function saveSurgeonColor(name, color) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('surgeons').upsert({ user_id: user.id, name, color }, { onConflict: 'user_id,name' });
+  if (error) { showToast('Could not save surgeon colour: ' + error.message); return; }
+  surgeonColorMap.set(name, color);
+}
+
+export async function loadAssignments() {
   const { data, error } = await supabase.from('assignments').select('*').order('date');
   if (error) { showToast('Could not load calendar: ' + error.message); return; }
   allAssignments = data || [];
@@ -72,14 +96,26 @@ function populateDatalists() {
   document.getElementById('hospital-list').innerHTML = hospitalNames.map((n) => `<option value="${escapeHtml(n)}">`).join('');
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
 function entryLabel(a) {
   if (a.is_day_off) return 'Day Off';
   if (a.surgeon && a.hospital) return `${a.surgeon} @ ${a.hospital}`;
   return a.surgeon || a.hospital || '';
+}
+
+function resolveColor(a) {
+  if (a.surgeon && surgeonColorMap.has(a.surgeon)) return surgeonColorMap.get(a.surgeon);
+  return a.color;
+}
+
+function timeRangeLabel(a) {
+  if (a.start_time && a.end_time) return `${a.start_time}–${a.end_time}`;
+  return a.start_time || a.end_time || '';
+}
+
+function statusStarHtml(a, size) {
+  if (!a.surgeon) return '';
+  const status = a.invoice_status || 'pending';
+  return `<span class="status-star ${size || ''}" style="color:${STATUS_COLOR[status]}" title="${STATUS_LABEL[status]}">★</span>`;
 }
 
 // ── VIEW SWITCHING ──
@@ -129,7 +165,7 @@ function renderMonth() {
       <div class="month-day ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}" data-date="${iso}">
         <div class="day-num">${d.getDate()}</div>
         <div class="day-entries">
-          ${shown.map(chipHtml).join('')}
+          ${shown.map((a) => chipHtml(a)).join('')}
           ${more > 0 ? `<div class="day-more">+${more} more</div>` : ''}
         </div>
       </div>`;
@@ -143,7 +179,9 @@ function chipHtml(a) {
   const cls = ['entry-chip'];
   if (a.status === 'cancelled') cls.push('cancelled');
   if (a.is_day_off) cls.push('day-off');
-  return `<div class="${cls.join(' ')}" style="background:${a.color}">${escapeHtml(entryLabel(a))}</div>`;
+  return `<div class="${cls.join(' ')}" style="background:${resolveColor(a)}">
+    <span class="entry-chip-label">${escapeHtml(entryLabel(a))}</span>${statusStarHtml(a, 'sm')}
+  </div>`;
 }
 
 // ── WEEK VIEW ──
@@ -169,9 +207,11 @@ function renderWeek() {
           <div class="week-day-num">${d.getDate()}</div>
         </div>
         ${entries.map((a) => `
-          <div class="week-entry ${a.status === 'cancelled' ? 'cancelled' : ''} ${a.is_day_off ? 'day-off' : ''}" style="background:${a.color}">
-            ${escapeHtml(entryLabel(a))}
-            ${a.note ? `<span class="entry-note">${escapeHtml(a.note)}</span>` : ''}
+          <div class="week-entry ${a.status === 'cancelled' ? 'cancelled' : ''} ${a.is_day_off ? 'day-off' : ''}" style="background:${resolveColor(a)}">
+            <div class="week-entry-top">
+              <span>${escapeHtml(entryLabel(a))}</span>${statusStarHtml(a)}
+            </div>
+            ${(a.note || timeRangeLabel(a)) ? `<span class="entry-note">${escapeHtml([timeRangeLabel(a), a.note].filter(Boolean).join(' · '))}</span>` : ''}
           </div>`).join('')}
       </div>`;
   }
@@ -249,7 +289,7 @@ function renderCustom() {
     rows.push(`
       <div class="custom-day-row" data-date="${iso}" style="cursor:pointer;">
         <div class="custom-day-date">${formatShortDate(iso)}</div>
-        <div class="custom-day-entries">${entries.map(chipHtml).join('')}</div>
+        <div class="custom-day-entries">${entries.map((a) => chipHtml(a)).join('')}</div>
       </div>`);
   }
 
@@ -280,18 +320,28 @@ function renderAssignmentList(iso) {
     listEl.innerHTML = `<div style="color:var(--muted); font-size:0.85rem; padding:8px 0;">No entries yet for this day.</div>`;
     return;
   }
-  listEl.innerHTML = entries.map((a) => `
+  listEl.innerHTML = entries.map((a) => {
+    const status = a.invoice_status || 'pending';
+    const meta = [timeRangeLabel(a), a.note].filter(Boolean).join(' · ');
+    return `
     <div class="assignment-row" data-id="${a.id}">
-      <div class="assignment-swatch" style="background:${a.color}"></div>
+      <div class="assignment-swatch" style="background:${resolveColor(a)}"></div>
       <div class="assignment-label">
         <span class="${a.status === 'cancelled' ? 'lbl-cancelled' : ''}">${escapeHtml(entryLabel(a))}</span>
-        ${a.note ? `<span class="lbl-note">${escapeHtml(a.note)}</span>` : ''}
+        ${meta ? `<span class="lbl-note">${escapeHtml(meta)}</span>` : ''}
+        ${a.surgeon && status === 'pending' ? `
+          <label class="prime-invoice-toggle">
+            <input type="checkbox" class="prime-checkbox" ${primedForInvoice.has(a.id) ? 'checked' : ''}>
+            Send to Invoicing
+          </label>` : ''}
       </div>
+      ${a.surgeon ? `<button class="status-star-btn ${status === 'pending' ? 'disabled' : ''}" style="color:${STATUS_COLOR[status]}" title="${STATUS_LABEL[status]}${status !== 'pending' ? ' — click to change' : ''}">★</button>` : ''}
       <div class="assignment-row-actions">
         <button class="edit-btn" title="Edit">✎</button>
         <button class="delete-btn" title="Delete">🗑</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   listEl.querySelectorAll('.edit-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -306,9 +356,29 @@ function renderAssignmentList(iso) {
       if (!confirm('Delete this entry?')) return;
       const { error } = await supabase.from('assignments').delete().eq('id', id);
       if (error) { showToast('Delete failed: ' + error.message); return; }
+      primedForInvoice.delete(id);
       showToast('Entry deleted.');
       await loadAssignments();
       renderAssignmentList(document.getElementById('entry-date').value);
+    });
+  });
+  listEl.querySelectorAll('.prime-checkbox').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const id = cb.closest('.assignment-row').dataset.id;
+      if (cb.checked) { primedForInvoice.add(id); showToast('Added to invoicing queue.'); }
+      else primedForInvoice.delete(id);
+    });
+  });
+  listEl.querySelectorAll('.status-star-btn:not(.disabled)').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.closest('.assignment-row').dataset.id;
+      const a = entries.find((e) => e.id === id);
+      const next = a.invoice_status === 'submitted' ? 'paid' : 'submitted';
+      const { error } = await supabase.from('assignments').update({ invoice_status: next }).eq('id', id);
+      if (error) { showToast('Update failed: ' + error.message); return; }
+      showToast(next === 'paid' ? '✅ Marked as paid.' : 'Marked as submitted.');
+      await loadAssignments();
+      renderAssignmentList(iso);
     });
   });
 }
@@ -324,6 +394,15 @@ function buildColorSwatches() {
   });
 }
 
+function onSurgeonFieldInput(e) {
+  const name = e.target.value.trim();
+  const colorGroup = document.getElementById('entry-color-group');
+  if (!name) { colorGroup.style.display = 'none'; manualColor = null; return; }
+  colorGroup.style.display = '';
+  manualColor = surgeonColorMap.get(name) || colorForLabel(name);
+  document.querySelectorAll('#entry-color-row .color-swatch').forEach((s) => s.classList.toggle('selected', s.dataset.color === manualColor));
+}
+
 function showEntryForm(existing) {
   editingId = existing ? existing.id : null;
   document.getElementById('entry-id').value = editingId || '';
@@ -332,9 +411,19 @@ function showEntryForm(existing) {
   document.getElementById('entry-surgeon').value = existing ? (existing.surgeon || '') : '';
   document.getElementById('entry-hospital').value = existing ? (existing.hospital || '') : '';
   document.getElementById('entry-note').value = existing ? (existing.note || '') : '';
+  document.getElementById('entry-start-time').value = existing ? (existing.start_time || '') : '';
+  document.getElementById('entry-end-time').value = existing ? (existing.end_time || '') : '';
   document.getElementById('entry-cancelled').checked = existing ? existing.status === 'cancelled' : false;
 
-  manualColor = existing ? existing.color : null;
+  const surgeon = existing ? (existing.surgeon || '') : '';
+  const colorGroup = document.getElementById('entry-color-group');
+  if (surgeon) {
+    colorGroup.style.display = '';
+    manualColor = surgeonColorMap.get(surgeon) || existing.color;
+  } else {
+    colorGroup.style.display = 'none';
+    manualColor = null;
+  }
   document.querySelectorAll('#entry-color-row .color-swatch').forEach((s) => s.classList.toggle('selected', s.dataset.color === manualColor));
 
   document.getElementById('entry-form').style.display = '';
@@ -356,6 +445,8 @@ async function onSaveEntry(e) {
   const surgeon = document.getElementById('entry-surgeon').value.trim();
   const hospital = document.getElementById('entry-hospital').value.trim();
   const note = document.getElementById('entry-note').value.trim();
+  const startTime = document.getElementById('entry-start-time').value;
+  const endTime = document.getElementById('entry-end-time').value;
   const cancelled = document.getElementById('entry-cancelled').checked;
 
   if (!isDayOff && !surgeon && !hospital) {
@@ -371,6 +462,8 @@ async function onSaveEntry(e) {
     surgeon: isDayOff ? null : (surgeon || null),
     hospital: isDayOff ? null : (hospital || null),
     note: isDayOff ? null : (note || null),
+    start_time: isDayOff ? null : (startTime || null),
+    end_time: isDayOff ? null : (endTime || null),
     is_day_off: isDayOff,
     status: cancelled ? 'cancelled' : 'confirmed',
     color,
@@ -385,6 +478,9 @@ async function onSaveEntry(e) {
   }
 
   if (error) { showToast('Save failed: ' + error.message); return; }
+
+  if (!isDayOff && surgeon) await saveSurgeonColor(surgeon, color);
+
   showToast(editingId ? '✅ Entry updated.' : '✅ Entry added.');
   hideEntryForm();
   await loadAssignments();

@@ -67,6 +67,32 @@
 .record-date { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
 .record-amount { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--success); white-space: nowrap; }
 .record-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.record-status-badge { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.record-status-badge.status-submitted { background: #f5e9d0; color: #b8862a; }
+.record-status-badge.status-partial { background: #ffe4cc; color: #c2661f; }
+.record-status-badge.status-paid { background: var(--success-pale); color: var(--success); }
+
+/* ── PENDING ── */
+.pending-group { margin-bottom: 22px; }
+.pending-group-header { display: flex; align-items: center; gap: 10px; padding: 8px 4px; font-size: 0.88rem; font-weight: 700; color: var(--navy); }
+.pending-group-header input { width: auto; }
+.pending-rows { display: flex; flex-direction: column; gap: 8px; }
+.pending-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
+.pending-row input[type="checkbox"] { width: auto; flex-shrink: 0; }
+.pending-row-date { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--slate); width: 110px; flex-shrink: 0; }
+.pending-row-meta { flex: 1; font-size: 0.82rem; color: var(--muted); min-width: 0; }
+.pending-empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+.pending-action-bar {
+  position: sticky; bottom: 0; margin-top: 16px; padding: 14px 18px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; box-shadow: 0 -4px 16px rgba(15,23,42,0.06);
+}
+
+.invoice-payment-panel { padding: 14px 24px; background: var(--navy-pale); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.invoice-payment-panel .payment-panel-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--slate); margin-bottom: 2px; }
+.invoice-payment-panel .payment-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.84rem; }
+.invoice-payment-panel .payment-line-date { color: var(--ink); font-weight: 500; }
+.invoice-payment-panel .payment-status-btn { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; border: none; cursor: pointer; }
 
 .settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 13px 16px; background: var(--navy-pale); border: 1px solid var(--border); border-radius: 8px; }
 .settings-row label { text-transform: none; font-size: 0.85rem; font-weight: 600; color: var(--ink); white-space: nowrap; }

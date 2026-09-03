@@ -108,9 +108,21 @@
       <div class="inv-page-header">
         <div class="inv-sub-nav">
           <button class="inv-sub-btn active" data-inv="form">＋ New Invoice</button>
+          <button class="inv-sub-btn" data-inv="pending">Pending <span class="badge" id="pending-count">0</span></button>
           <button class="inv-sub-btn" data-inv="records">Records</button>
           <button class="inv-sub-btn" data-inv="settings">Settings</button>
         </div>
+      </div>
+
+      <!-- PENDING (surgeon bookings awaiting invoicing) -->
+      <div class="inv-view" id="inv-view-pending">
+        <div class="records-header">
+          <div>
+            <h2>Pending Invoicing</h2>
+            <p>Tick the bookings for one surgeon and generate an invoice for them.</p>
+          </div>
+        </div>
+        <div id="pending-container"></div>
       </div>
 
       <!-- NEW INVOICE -->
@@ -119,18 +131,18 @@
           <div class="form-header">
             <div class="form-header-icon">📄</div>
             <div>
-              <h2>Generate New Invoice</h2>
-              <p>Add each shift with its own date and rate — total calculates automatically.</p>
+              <h2 id="form-title">Generate New Invoice</h2>
+              <p id="form-subtitle">Add each shift with its own date and rate — total calculates automatically.</p>
             </div>
           </div>
           <div class="form-body">
             <div class="form-grid">
               <div class="form-group">
-                <label>Hospital / Client Name</label>
+                <label id="f-recipient-label">Hospital / Client Name</label>
                 <input type="text" id="f-hospital" placeholder="e.g. Pall Mall Hospital">
               </div>
               <div class="form-group">
-                <label>Hospital Location</label>
+                <label id="f-location-label">Hospital Location</label>
                 <input type="text" id="f-location" placeholder="e.g. Newton-le-Willows">
               </div>
             </div>
@@ -251,8 +263,18 @@
             <label for="entry-note">Note (optional)</label>
             <input type="text" id="entry-note" placeholder="e.g. AM, Lim">
           </div>
-          <div class="field-group">
-            <label>Colour</label>
+          <div class="time-range-row">
+            <div class="field-group">
+              <label for="entry-start-time">Start Time (optional)</label>
+              <input type="time" id="entry-start-time">
+            </div>
+            <div class="field-group">
+              <label for="entry-end-time">End Time (optional)</label>
+              <input type="time" id="entry-end-time">
+            </div>
+          </div>
+          <div class="field-group" id="entry-color-group" style="display:none;">
+            <label>Surgeon Colour <span class="field-hint">— applies to all of this surgeon's bookings</span></label>
             <div class="color-swatch-row" id="entry-color-row"></div>
           </div>
           <div class="cancelled-toggle">
@@ -281,6 +303,7 @@
         <button class="btn btn-teal btn-sm" id="invoice-print-btn">🖨 Print / Save PDF</button>
       </div>
     </div>
+    <div id="invoice-payment-panel" style="display:none;"></div>
     <div class="invoice-doc" id="invoice-doc"></div>
   </div>
 </div>
