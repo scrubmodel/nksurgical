@@ -121,7 +121,7 @@ function renderMonth() {
     const d = addDays(gridStart, i);
     const iso = toISODate(d);
     const outside = d.getMonth() !== anchorDate.getMonth();
-    const isToday = isSameDate(d, today);
+    const isToday = !outside && isSameDate(d, today);
     const entries = byDate.get(iso) || [];
     const shown = entries.slice(0, 3);
     const more = entries.length - shown.length;
@@ -195,7 +195,7 @@ function renderYear() {
       const d = addDays(gridStart, i);
       const iso = toISODate(d);
       const outside = d.getMonth() !== m;
-      const isToday = isSameDate(d, today);
+      const isToday = !outside && isSameDate(d, today);
       const entries = outside ? [] : (byDate.get(iso) || []);
       const hasEntries = entries.length > 0;
       const onlyCancelled = hasEntries && entries.every((a) => a.status === 'cancelled');
